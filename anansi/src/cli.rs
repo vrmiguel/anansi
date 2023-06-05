@@ -1,13 +1,10 @@
 #[derive(Debug, clap::Parser)]
 #[command(
-    name = "msg-cli",
-    version = "1.0",
-    author = "Your Name",
-    about = "A command-line tool for message passing and IPC"
+    name = "anansi",
+    author = "Vinícius R. Miguel",
+    about = "Client for the anansi server"
 )]
 pub enum Args {
-    #[clap(name = "start", about = "start the Anansi server")]
-    Start {},
     #[clap(
         name = "on",
         about = "Listen for a specific message and perform an action"

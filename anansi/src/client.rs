@@ -17,7 +17,7 @@ pub fn send_message(msg: &str) -> Result<()> {
     stream.shutdown(Shutdown::Write)?;
 
     {
-        tracing::info!("Reading shit");
+        tracing::info!("Reading from server");
 
         let mut buf = String::new();
         stream.read_to_string(&mut buf)?;

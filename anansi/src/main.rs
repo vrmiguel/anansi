@@ -4,34 +4,32 @@ mod cli;
 mod error;
 
 mod client;
-mod server;
 
 use cli::Args;
 use client::send_message;
 pub use error::{Error, Result};
-use server::run_server;
 
+// TODO: move constant to core
 pub const SOCKET_PATH: &str = "/tmp/anansi-socket";
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let args = cli::Args::parse();
 
     tracing_subscriber::fmt().compact().init();
 
-    if let Err(err) = run(args).await {
+    if let Err(err) = run(args) {
         tracing::error!("{err}");
     }
 }
 
-async fn run(args: Args) -> crate::Result {
+fn run(args: Args) -> crate::Result {
     match args {
-        Args::On { message, action } => {}
+        Args::On {
+            message: _,
+            action: _,
+        } => {}
         Args::Send { message } => {
             send_message(&message)?;
-        }
-        Args::Start {} => {
-            run_server().await?;
         }
     }
 

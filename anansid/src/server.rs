@@ -1,8 +1,6 @@
 use tokio::{
-    io::{
-        AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader,
-    },
-    net::{TcpStream, UnixListener, UnixStream},
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::{UnixListener, UnixStream},
 };
 
 use crate::{Result, SOCKET_PATH};
@@ -10,19 +8,14 @@ use crate::{Result, SOCKET_PATH};
 async fn handle_stream(mut stream: UnixStream) -> Result {
     // let (reader, mut writer) = stream.split();
 
-    tracing::info!("??");
-
     let mut buf = [0; 4096];
     loop {
-        tracing::info!("???");
-
         let num_read = stream.read(&mut buf).await?;
-        tracing::info!("???, {num_read}");
+        tracing::info!("Bytes read: {num_read}");
 
         if num_read == 0 {
             break;
         }
-        // let buf = &buf[..num_read];
     }
 
     stream.write(b"OK").await?;
