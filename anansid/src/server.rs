@@ -6,16 +6,15 @@ use tokio::{
 use crate::{Result, SOCKET_PATH};
 
 async fn handle_stream(mut stream: UnixStream) -> Result {
-    // let (reader, mut writer) = stream.split();
-
     let mut buf = [0; 4096];
     loop {
         let num_read = stream.read(&mut buf).await?;
-        tracing::info!("Bytes read: {num_read}");
 
         if num_read == 0 {
             break;
         }
+
+        tracing::info!("Bytes read: {num_read}");
     }
 
     stream.write(b"OK").await?;
@@ -35,16 +34,25 @@ pub async fn run_server() -> crate::Result {
         let stream = match listener.accept().await {
             Ok((stream, _)) => stream,
             Err(err) => {
-                eprintln!("Error accepting connection: {err}");
+                tracing::error!(
+                    "Error accepting connection: {err}. Continuing."
+                );
                 continue;
             }
         };
 
         tracing::info!("Accepted connection");
 
-        // Spawn a new task to handle the client
-        // tokio::spawn(async move { });
-        handle_stream(stream).await?;
+        // TO-DO: handle this in another Tokio task.. once that
+        // works
+        tokio::spawn(async {
+            tracing::info!("Spawning task");
+            if let Err(err) = handle_stream(stream).await {
+                tracing::error!(
+                    "Failed handling an incoming stream: {err}"
+                );
+            }
+        });
     }
 
     // TODO: know when to close the server

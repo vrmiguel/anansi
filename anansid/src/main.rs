@@ -7,7 +7,7 @@ use server::run_server;
 
 pub const SOCKET_PATH: &str = "/tmp/anansi-socket";
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() {
     tracing_subscriber::fmt().compact().init();
 
