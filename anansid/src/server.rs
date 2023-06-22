@@ -1,3 +1,4 @@
+use anansi_core::Message;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{UnixListener, UnixStream},
@@ -5,17 +6,33 @@ use tokio::{
 
 use crate::{Result, SOCKET_PATH};
 
-async fn handle_stream(mut stream: UnixStream) -> Result {
-    let mut buf = [0; 4096];
+async fn read_msg<'a, 'b>(
+    stream: &'a mut UnixStream,
+    mut buf: &'b mut [u8],
+) -> Result<Message<'b>> {
+    let mut bytes_read_acc = 0;
     loop {
-        let num_read = stream.read(&mut buf).await?;
+        let bytes_read = stream.read(&mut buf).await?;
 
-        if num_read == 0 {
+        if bytes_read == 0 {
             break;
         }
 
-        tracing::info!("Bytes read: {num_read}");
+        tracing::info!("Bytes read: {bytes_read}");
+        bytes_read_acc += bytes_read;
     }
+
+    let msg = std::str::from_utf8(&buf[..bytes_read_acc])?;
+
+    Ok(anansi_core::decoder::parse(msg).unwrap())
+}
+
+async fn handle_stream(mut stream: UnixStream) -> Result {
+    let mut buf = [0; 4096];
+
+    let msg = read_msg(&mut stream, &mut buf).await?;
+
+    tracing::info!("Got message: '{msg}'");
 
     stream.write(b"OK").await?;
 
@@ -54,7 +71,4 @@ pub async fn run_server() -> crate::Result {
             }
         });
     }
-
-    // TODO: know when to close the server
-    Ok(())
 }

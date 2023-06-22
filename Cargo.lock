@@ -6,10 +6,9 @@ version = 3
 name = "anansi"
 version = "0.1.0"
 dependencies = [
+ "anansi-core",
  "clap",
  "thiserror",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -20,6 +19,7 @@ version = "0.1.0"
 name = "anansid"
 version = "0.1.0"
 dependencies = [
+ "anansi-core",
  "thiserror",
  "tokio",
  "tracing",

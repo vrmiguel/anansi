@@ -11,11 +11,11 @@ pub enum Args {
     )]
     On {
         #[clap(help = "The message to listen for")]
-        message: String,
+        channel: String,
         #[clap(
             help = "The action to perform when the message is received"
         )]
-        action: String,
+        run: String,
     },
     #[clap(
         name = "send",
@@ -23,6 +23,6 @@ pub enum Args {
     )]
     Send {
         #[clap(help = "The message to send")]
-        message: String,
+        channel: String,
     },
 }
