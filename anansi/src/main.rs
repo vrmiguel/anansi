@@ -27,11 +27,11 @@ fn main() {
 fn run(args: Args) -> crate::Result {
     let msg = match &args {
         Args::On { channel, run } => Message::On {
-            channel_name: &channel,
+            channel_name: channel,
             run,
         },
         Args::Send { channel } => Message::Send {
-            channel_name: &channel,
+            channel_name: channel,
         },
     };
 

@@ -1,10 +1,11 @@
-use std::fmt::Display;
-use std::matches;
-use std::process::ExitStatus as StdExitStatus;
-use std::write;
+use std::{
+    fmt::Display, matches, process::ExitStatus as StdExitStatus,
+    write,
+};
+
+use tokio::process::Command;
 
 use crate::{Error, Result};
-use tokio::process::Command;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ExitStatus {
@@ -49,9 +50,10 @@ impl Runner {
     pub async fn run_to_completion(command: &str) -> Result<()> {
         let (binary, args) =
             command.split_once(' ').unwrap_or((command, ""));
-        // let binary = args.next().ok_or(Error::NoProcessToRun)?;
+        // let binary =
+        // args.next().ok_or(Error::NoProcessToRun)?;
         let mut child_process =
-            Command::new(binary).args(&[args]).spawn()?;
+            Command::new(binary).args([args]).spawn()?;
 
         let status = {
             let std_status = child_process.wait().await?;

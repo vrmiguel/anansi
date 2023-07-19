@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use anansi_core::Message;
+use anansi_core::{Message, Response};
 use tokio::sync::RwLock;
 
 use crate::{runner::Runner, Error};
@@ -21,15 +21,14 @@ impl EventRegistry {
     }
 
     #[inline(always)]
-    async fn handle_send(
-        &self,
-        channel_name: &str,
-    ) -> &'static str {
+    async fn handle_send(&self, channel_name: &str) -> Response {
         let res = {
             let read_guard = self.inner.read().await;
 
-            let Some(command_to_run) = read_guard.get(channel_name) else {
-                return "NOT_FOUND";
+            let Some(command_to_run) =
+                read_guard.get(channel_name)
+            else {
+                return Response::ChannelNotFound;
             };
 
             Runner::run_to_completion(command_to_run).await
@@ -40,9 +39,14 @@ impl EventRegistry {
         );
 
         match res {
-            Ok(()) => "OK",
-            Err(Error::ProcessFailed(_)) => "PROC_FAILED",
-            Err(_) => "INTERNAL_ERR",
+            Ok(()) => Response::Ok,
+            Err(Error::ProcessFailed(_)) => {
+                Response::ProcessFailed
+            }
+            Err(_) => {
+                // TODO: embed error details?
+                Response::InternalError
+            }
         }
     }
 
@@ -51,20 +55,20 @@ impl EventRegistry {
         &self,
         channel_name: &str,
         command_to_run: &str,
-    ) -> &'static str {
+    ) -> Response {
         let mut write_guard = self.inner.write().await;
 
         // TODO: notify if a channel gets its command rewritten?
         write_guard
             .insert(channel_name.into(), command_to_run.into());
 
-        "OK"
+        Response::Ok
     }
 
     pub async fn handle_message<'msg>(
         &self,
         msg: Message<'msg>,
-    ) -> &'static str {
+    ) -> Response {
         match msg {
             Message::Send { channel_name } => {
                 self.handle_send(channel_name).await
@@ -72,7 +76,7 @@ impl EventRegistry {
             Message::On { channel_name, run } => {
                 self.handle_on(channel_name, run).await
             }
-            Message::Close => "UNIMPLEMENTED",
+            Message::Close => Response::Unimplemented,
         }
     }
 }
