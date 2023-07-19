@@ -1,8 +1,12 @@
 mod error;
 
+mod events;
+mod runner;
 mod server;
+mod smallstring;
 
 pub use error::{Error, Result};
+use events::EventRegistry;
 use server::run_server;
 
 pub const SOCKET_PATH: &str = "/tmp/anansi-socket";
@@ -17,5 +21,7 @@ async fn main() {
 }
 
 async fn run() -> crate::Result {
-    run_server().await
+    let event_registry = EventRegistry::new();
+
+    run_server(event_registry).await
 }

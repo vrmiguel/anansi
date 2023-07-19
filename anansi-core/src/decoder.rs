@@ -28,7 +28,6 @@ pub fn parse(input: &'_ str) -> Result<Message<'_>> {
         }
         "ON" => {
             // Wait for an event
-
             let (channel_name, command) =
                 body.split_once(' ')
                     .ok_or(Error::InvalidSend(body))?;
@@ -39,7 +38,7 @@ pub fn parse(input: &'_ str) -> Result<Message<'_>> {
             })
         }
         "CL" => Ok(Message::Close),
-        _ => return Err(Error::InvalidTag { invalid_tag: tag }),
+        _ => Err(Error::InvalidTag { invalid_tag: tag }),
     }
 }
 

@@ -4,15 +4,15 @@ use tokio::{
     net::{UnixListener, UnixStream},
 };
 
-use crate::{Result, SOCKET_PATH};
+use crate::{events::EventRegistry, Result, SOCKET_PATH};
 
 async fn read_msg<'a, 'b>(
     stream: &'a mut UnixStream,
-    mut buf: &'b mut [u8],
+    buf: &'b mut [u8],
 ) -> Result<Message<'b>> {
     let mut bytes_read_acc = 0;
     loop {
-        let bytes_read = stream.read(&mut buf).await?;
+        let bytes_read = stream.read(buf).await?;
 
         if bytes_read == 0 {
             break;
@@ -24,26 +24,35 @@ async fn read_msg<'a, 'b>(
 
     let msg = std::str::from_utf8(&buf[..bytes_read_acc])?;
 
+    // TODO: error treatment
     Ok(anansi_core::decoder::parse(msg).unwrap())
 }
 
-async fn handle_stream(mut stream: UnixStream) -> Result {
-    let mut buf = [0; 4096];
+async fn handle_stream(
+    mut stream: UnixStream,
+    registry: EventRegistry,
+) -> Result {
+    let mut buf = [0; 1024];
 
-    let msg = read_msg(&mut stream, &mut buf).await?;
+    // Read and parse the client's message
+    let msg = {
+        let msg = read_msg(&mut stream, &mut buf).await?;
+        tracing::info!("Got message: '{msg}'");
 
-    tracing::info!("Got message: '{msg}'");
+        msg
+    };
 
-    stream.write(b"OK").await?;
+    let response = registry.handle_message(msg).await;
+    stream.write_all(response.as_bytes()).await?;
 
     stream.flush().await?;
-
-    tracing::info!("All done with client");
 
     Ok(())
 }
 
-pub async fn run_server() -> crate::Result {
+pub async fn run_server(
+    registry: EventRegistry,
+) -> crate::Result {
     let _ = std::fs::remove_file(SOCKET_PATH);
     let listener = UnixListener::bind(SOCKET_PATH)?;
 
@@ -60,11 +69,12 @@ pub async fn run_server() -> crate::Result {
 
         tracing::info!("Accepted connection");
 
-        // TO-DO: handle this in another Tokio task.. once that
-        // works
-        tokio::spawn(async {
+        let registry_for_task = registry.clone();
+        tokio::spawn(async move {
             tracing::info!("Spawning task");
-            if let Err(err) = handle_stream(stream).await {
+            if let Err(err) =
+                handle_stream(stream, registry_for_task).await
+            {
                 tracing::error!(
                     "Failed handling an incoming stream: {err}"
                 );
